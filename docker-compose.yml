@@ -9,9 +9,9 @@ services:
     links:
       - db
   web2:
-    build: ./web2
+    build: ./textSimilarity
     ports:
-      - "6000:5010"
+      - "5010:5010"
     #    we are linking then here because web is depending from db
     links:
       - db
