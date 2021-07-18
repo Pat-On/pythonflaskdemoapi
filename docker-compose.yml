@@ -8,5 +8,12 @@ services:
     #    we are linking then here because web is depending from db
     links:
       - db
+  web2:
+    build: ./web2
+    ports:
+      - "6000:5010"
+    #    we are linking then here because web is depending from db
+    links:
+      - db
   db:
     build: ./db

@@ -161,5 +161,12 @@ api.add_resource(Register, '/register')
 api.add_resource(Store, "/store")
 api.add_resource(Get, "/get")
 
+
+# Simple check route
+@app.route('/')
+def hello_world():
+    return "Hello World from web1 app!"
+
+
 if __name__ == "__main__":
     app.run(host="0.0.0.0")
