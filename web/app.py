@@ -28,6 +28,26 @@ db = client.SentencesDatabase
 users = db["Users"]
 
 
+# HELPER FUNCTIONS
+def verify_password(username, password):
+    hashed_pw = users.find({
+        "Username": username
+    })[0]["Password"]
+
+    if bcrypt.hashpw(password.encode('utf8'), hashed_pw) == hashed_pw:
+        return True
+    else:
+        return False
+
+
+def count_tokens(username):
+    tokens = users.find({
+        "Username": username
+    })[0]["Tokens"]
+    return tokens
+
+
+# RESOURCES
 class Register(Resource):
     def post(self):
         # to get users data
@@ -38,10 +58,10 @@ class Register(Resource):
         password = posted_data["password"]
 
         # hash(password + salt) = blablablabalbalb in python py-bcrypt
-        hashed_pw = bcrypt.hashpw(password, bcrypt.gensalt())
+        hashed_pw = bcrypt.hashpw(password.encode('utf8'), bcrypt.gensalt())
 
         # store username and pt into the db - in production what is normal to check if user exist!
-        users.insertOne({
+        users.insert({
             "Username": user_name,
             "Password": hashed_pw,
             "Sentence": "",  # placeholder
@@ -96,8 +116,50 @@ class Store(Resource):
         return jsonify(ret_json)
 
 
+class Get(Resource):
+    def get(self):
+        posted_data = request.get_json()
+
+        username = posted_data["username"]
+        password = posted_data["password"]
+
+        correct_pw = verify_password(username, password)
+        if not correct_pw:
+            ret_json = {
+                "status": 302
+            }
+            return jsonify(ret_json)
+
+        numbers_of_tokens = count_tokens(username)
+        if numbers_of_tokens <= 0:
+            ret_json = {
+                "status": 301
+            }
+            return jsonify(ret_json)
+        users.update({
+            "Username": username
+        }, {
+            "$set": {
+                "Tokens": numbers_of_tokens - 1
+            }
+        })
+
+        sentence = users.find({
+            "Username": username
+        })[0]["Sentence"]
+
+        ret_json = {
+            "status": 200,
+            "sentence": sentence
+        }
+
+        return jsonify(ret_json)
+
+
 # RESOURCES OF OUR API
 api.add_resource(Register, '/register')
+api.add_resource(Store, "/store")
+api.add_resource(Get, "/get")
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0")
