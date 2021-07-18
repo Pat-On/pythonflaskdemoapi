@@ -11,5 +11,9 @@ COPY requirments.txt .
 RUN pip install --no-cache-dir -r requirments.txt
 #coppying everything
 COPY . .
+# my test if i can install anything here
+#RUN pip install -U pip setuptools wheel
+#RUN pip install -U spacy
+RUN python -m spacy download en_core_web_sm
 #running app
 CMD ["python", "app.py"]

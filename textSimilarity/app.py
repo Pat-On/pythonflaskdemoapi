@@ -17,7 +17,9 @@ from flask import Flask, jsonify, request
 from flask_restful import Api, Resource
 from pymongo import MongoClient
 import bcrypt
+
 import spacy
+spacy.load('en_core_web_sm')
 
 app = Flask(__name__)
 api = Api(app)
@@ -30,7 +32,7 @@ users = db["Users"]
 
 
 def UserExist(username):
-    if users.find({"Username": username}).count() == 0:
+    if users.find({"username": username}).count() == 0:
         return False
     else:
         return True
@@ -41,8 +43,8 @@ def VerifyPw(username, password):
         return False
 
     hashed_pw = users.find({
-        "Username": username
-    })[0]["Password"]
+        "username": username
+    })[0]["password"]
 
     if bcrypt.hashpw(password.encode("utf8"), hashed_pw) == hashed_pw:
         return True
@@ -53,8 +55,8 @@ def VerifyPw(username, password):
 # maybe we should do it at the same time when we check if user exist
 def CountTokens(username):
     tokens = users.find({
-        "Usersname": username
-    })[0]["Tokens"]
+        "username": username
+    })[0]["tokens"]
     return tokens
 
 
@@ -72,12 +74,12 @@ class Register(Resource):
             }
             return jsonify(ret_json)
 
-        hashed_pw = bcrypt.hashpw(password.encoded("utf8"), bcrypt.gensalt())
+        hashed_pw = bcrypt.hashpw(password.encode("utf8"), bcrypt.gensalt())
 
-        users.instert_one({
-            "Username": username,
-            "Password": hashed_pw,
-            "Tokens": 6
+        users.insert({
+            "username": username,
+            "password": hashed_pw,
+            "tokens": 6
         })
 
         ret_json = {
@@ -136,15 +138,61 @@ class Detect(Resource):
 
         current_tokens = CountTokens(username)
         users.update({
-            "Username": username,
+            "username": username,
         }, {
             "$set": {
-                "Tokens": current_tokens - 1
+                "tokens": current_tokens - 1
             }
         })
         return jsonify(ret_json)
 
 
+class Refill(Resource):
+    def post(self):
+        posted_data = request.get_json()
+
+        username = posted_data["username"]
+        password = posted_data["admin_pw"]
+        refill_amount = posted_data["refill"]
+
+        if not UserExist(username):
+            ret_json = {
+                "status": 301,
+                "msg": "Invalid Username"
+            }
+            return jsonify(ret_json)
+
+        # hard coded solution to simplify - fun
+        correct_pw = "password"
+        if not password == correct_pw:
+            ret_json = {
+                "status": 304,
+                "msg": "Invalid Admin Password"
+            }
+            return jsonify(ret_json)
+
+        current_tokens = CountTokens(username)
+        users.update({
+            "username": username
+        }, {
+            "$set": {
+                "tokens": refill_amount + current_tokens
+            }
+        })
+
+        ret_json = {
+            "status": 200,
+            "msg": "Refilled successfully"
+        }
+        return jsonify(ret_json)
+
+
+# adding resources to API
+api.add_resource(Register, '/register')
+api.add_resource(Detect, '/detect')
+api.add_resource(Refill, '/refill')
+
+# Check
 @app.route('/')
 def hello_world():
     return "Hello World from textSimilarity app!"
