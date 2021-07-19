@@ -130,7 +130,8 @@ class Classify(Resource):
 
         with open("temp.jpg", "wb") as f:
             f.write(r.content)
-            proc = subprocess.Popen("python classify_image.py --model_dir=. --image_file=./temp.jpg")
+            # proc = subprocess.Popen('python classify_image.py --model_dir=. --image_file=./temp.jpg')
+            proc = subprocess.Popen('python classify_image.py --model_dir=. --image_file=temp.jpg',  shell=True)
             proc.communicate()[0]
             proc.wait()
             with open("text.txt") as g:
@@ -144,3 +145,39 @@ class Classify(Resource):
             }
         })
         return ret_json
+
+
+class Refill(Resource):
+    def post(self):
+        posted_data = request.get_json()
+
+        username = posted_data["username"]
+        password = posted_data["admin_pw"]
+        amount = posted_data["amount"]
+
+        if not user_exist(username):
+            return jsonify(generated_return_dictionary(301, "Invalid username"))
+
+        # hard coded for simplification
+        correct_pw = "password"
+
+        if not password == correct_pw:
+            return jsonify(generated_return_dictionary(304, "Invalid administrator password"))
+
+        users.update({
+            "Username": username
+        }, {
+            "$set": {
+                "Tokens": amount
+            }
+        })
+
+        return jsonify(generated_return_dictionary(200, "You refilled the tokens amount"))
+
+
+api.add_resource(Register, "/register")
+api.add_resource(Classify, "/classify")
+api.add_resource(Refill, "/refill")
+
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=5020)

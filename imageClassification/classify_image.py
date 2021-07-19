@@ -41,7 +41,9 @@ import json
 
 import numpy as np
 from six.moves import urllib
-import tensorflow as tf
+# import tensorflow as tf
+import tensorflow.compat.v1 as tf
+tf.disable_v2_behavior()
 
 FLAGS = None
 
@@ -155,18 +157,18 @@ def run_inference_on_image(image):
 
         # Creates node ID --> English string lookup.
         node_lookup = NodeLookup()
-
-        top_k = predictions.argsort()[-FLAGS.num_top_predictions:][::-1]
         # MODIFICATION
-        ret_json = {}
+        ret_json = dict()
+        top_k = predictions.argsort()[-FLAGS.num_top_predictions:][::-1]
+
         for node_id in top_k:
             human_string = node_lookup.id_to_string(node_id)
             score = predictions[node_id]
-            ret_json[human_string] = score
+            ret_json[human_string] = str(score)
             print('%s (score = %.5f)' % (human_string, score))
 
         # saving it into the file
-        with open('text.txt') as f:
+        with open('text.txt', "w") as f:
             json.dump(ret_json, f)
 
 
