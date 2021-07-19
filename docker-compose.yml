@@ -21,5 +21,11 @@ services:
       - "5020:5020"
     links:
       - db
+  web4:
+    build: ./bankAPI
+    ports:
+      - "5030:5030"
+    links:
+      - db
   db:
     build: ./db
