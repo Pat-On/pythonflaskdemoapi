@@ -15,5 +15,11 @@ services:
     #    we are linking then here because web is depending from db
     links:
       - db
+  web3:
+    build: ./imageClassification
+    ports:
+      - "5020:5020"
+    links:
+      - db
   db:
     build: ./db
